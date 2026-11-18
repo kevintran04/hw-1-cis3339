@@ -1,0 +1,20 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useManagementStore } from '../stores/management'
+const store = useManagementStore()
+const form = ref({ name: '', studentId: '', phone: '', zip: '' })
+const search = ref(''), message = ref(''), error = ref(''), busy = ref(false)
+const countLabel = computed(() => `${store.students.length} ${store.students.length === 1 ? 'student' : 'students'}`)
+onMounted(() => store.loadStudents().catch(e => error.value = e.message))
+async function submit() { message.value = ''; error.value = ''; busy.value = true; try { await store.addStudent({ ...form.value }); form.value = { name: '', studentId: '', phone: '', zip: '' }; message.value = 'Student added successfully.' } catch (e) { error.value = e.message } finally { busy.value = false } }
+async function findStudents() { error.value = ''; try { await store.loadStudents(search.value.trim()) } catch (e) { error.value = e.message } }
+async function remove(student) { if (!confirm(`Delete ${student.name}? Any enrollments for this student will also be removed.`)) return; try { await store.deleteStudent(student._id); message.value = 'Student deleted.' } catch (e) { error.value = e.message } }
+</script>
+<template>
+  <section class="page-heading"><div><div class="eyebrow">DIRECTORY / PEOPLE</div><h1>Student management</h1><p class="subtitle">Create student records, find student details, and keep your directory up to date.</p></div><div class="heading-chip"><span class="chip-icon">▤</span><span><strong>{{ countLabel }}</strong><small>IN DIRECTORY</small></span></div></section>
+  <div v-if="message" class="alert success" role="status">✓ {{ message }}</div><div v-if="error" class="alert error" role="alert">{{ error }}</div>
+  <div class="two-column"><section class="panel form-panel"><div class="panel-heading"><div><span class="section-kicker">NEW RECORD</span><h2>Add a student</h2></div><span class="panel-icon">＋</span></div><form @submit.prevent="submit"><label>Full name<input v-model.trim="form.name" required maxlength="100" placeholder="e.g. John Smith"/></label><label>Student ID<input v-model.trim="form.studentId" required maxlength="30" placeholder="e.g. 1001"/></label><div class="form-row"><label>Phone number<input v-model.trim="form.phone" required maxlength="25" placeholder="555-1234"/></label><label>ZIP code<input v-model.trim="form.zip" required pattern="[0-9]{5}(-[0-9]{4})?" title="Enter a 5-digit ZIP code" placeholder="77001"/></label></div><button class="primary-button" :disabled="busy">{{ busy ? 'Saving…' : 'Add student' }} <span>→</span></button></form><p class="form-note">All fields are required. Student IDs must be unique.</p></section>
+  <section class="panel list-panel"><div class="panel-heading"><div><span class="section-kicker">STUDENT DIRECTORY</span><h2>Find a student</h2></div><span class="count-pill">{{ store.students.length }} RECORDS</span></div><form class="search-bar" @submit.prevent="findStudents"><span>⌕</span><input v-model="search" aria-label="Search by name or student ID" placeholder="Search name or student ID…"/><button type="submit">Search</button><button v-if="search" class="clear-button" type="button" @click="search=''; findStudents()">Clear</button></form>
+    <div v-if="store.loading" class="empty-state">Loading students…</div><div v-else-if="!store.students.length" class="empty-state"><span class="empty-icon">♙</span><strong>No students found</strong><small>Add a student or try a different search.</small></div><div v-else class="table-wrap"><table><thead><tr><th>STUDENT</th><th>STUDENT ID</th><th>PHONE</th><th>ZIP</th><th></th></tr></thead><tbody><tr v-for="student in store.students" :key="student._id"><td><div class="person-cell"><span class="avatar">{{ student.name.charAt(0).toUpperCase() }}</span><strong>{{ student.name }}</strong></div></td><td class="mono">{{ student.studentId }}</td><td>{{ student.phone }}</td><td>{{ student.zip }}</td><td><button class="icon-button danger-text" :aria-label="`Delete ${student.name}`" @click="remove(student)">×</button></td></tr></tbody></table></div>
+  </section></div>
+</template>

@@ -1,0 +1,12 @@
+{
+  "name": "cis3339-student-management",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && npm --prefix frontend install && npm --prefix backend install",
+    "build": "npm --prefix frontend run build",
+    "start": "node backend/server.js",
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\""
+  },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}
